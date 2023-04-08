@@ -43,7 +43,7 @@ const userRoutes = [
           "secretKey",
           { expiresIn: "1h" }
         );
-        return h.response({ token }).code(200);
+        return h.response({ token, user }).code(200);
       } catch (err) {
         console.error(err);
         return h.response({ message: "Internal server error" }).code(500);
