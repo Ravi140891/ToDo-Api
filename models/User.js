@@ -1,31 +1,46 @@
-const pool = require("../db");
+const { Model } = require("objection");
 const bcrypt = require("bcrypt");
 
-class User {
-  static async create(name, email, password) {
-    const client = await pool.connect();
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const { rows } = await client.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
-      [name, email, hashedPassword]
-    );
-    return rows[0];
+class User extends Model {
+  static get tableName() {
+    return "users";
   }
 
-  static async findByEmail(email) {
-    const client = await pool.connect();
-    const { rows } = await client.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
-    if (rows.length === 0) {
-      return null;
-    }
-    return rows[0];
+  static get jsonSchema() {
+    return {
+      type: "object",
+      required: ["name", "email", "password"],
+      properties: {
+        id: { type: "integer" },
+        name: { type: "string", minLength: 1, maxLength: 255 },
+        email: { type: "string", minLength: 1, maxLength: 255 },
+        password: { type: "string", minLength: 1, maxLength: 255 },
+      },
+    };
   }
 
-  static async verifyPassword(user, password) {
-    return await bcrypt.compare(password, user.password);
+  async $beforeInsert() {
+    this.password = await User.hashPassword(this.password);
+  }
+
+  async verifyPassword(password) {
+    return await bcrypt.compare(password, this.password);
+  }
+
+  static async hashPassword(password) {
+    const saltRounds = 10;
+    const salt = await bcrypt.genSalt(saltRounds);
+    const hash = await bcrypt.hash(password, salt);
+    return hash;
+  }
+
+  static async create(userData) {
+    const hashedPassword = await this.hashPassword(userData.password);
+    return this.query().insert({
+      name: userData.name,
+      email: userData.email,
+      password: hashedPassword,
+    });
   }
 }
 

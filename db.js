@@ -1,27 +1,17 @@
-const { Pool } = require("pg");
+const { Model } = require("objection");
+const Knex = require("knex");
 
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "todoapp",
-  password: "Ravi@1234",
-  port: 5432,
+const knex = Knex({
+  client: "pg",
+  connection: {
+    user: "postgres",
+    host: "localhost",
+    database: "todoapp",
+    password: "Ravi@1234",
+    port: 5432,
+  },
 });
 
-pool.query(
-  `CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
-  )`,
-  (err, res) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log("Table created successfully");
-    }
-  }
-);
+Model.knex(knex);
 
-module.exports = pool;
+module.exports = { knex, Model };
